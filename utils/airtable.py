@@ -37,6 +37,7 @@ class AirtableManager:
                 "internal_thread": priv_thread_ts
             }
         )
+        return True
 
     def update_request(self, pub_thread_ts, **updates):
         req = self.get_request(pub_thread_ts=pub_thread_ts)
