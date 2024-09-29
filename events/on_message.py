@@ -1,26 +1,42 @@
+from slack_sdk.web.async_client import AsyncWebClient
+from typing import Callable, Dict, Any
+
+
 from utils.env import env
 
-def handle_message(body, client, say):
+async def handle_message(body: Dict[str, Any], client: AsyncWebClient, say):
     if body["event"]["channel"] != env.slack_support_channel:
         return
 
+    if body["event"].get("thread_ts"):
+        return
+    
     subtype = body["event"].get("subtype")
     if subtype == "message_changed":
-        handle_edited_message(body, client)
+        await handle_edited_message(body, client)
     if subtype == "message_deleted":
-        handle_deleted_message(body, client)
+        await handle_deleted_message(body, client)
     elif subtype:
-        say(f"I don't support this message subtype yet. `{subtype}`")
+        await say(f"I don't support this message subtype yet. `{subtype}`")
         return
     else:
-        handle_new_message(body, client)
+        await handle_new_message(body, client)
 
 
+async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient):
+    user = await client.users_info(user=body["event"]["user"])
 
-def handle_new_message(body, client):
-    user = client.users_info(user=body["event"]["user"])
+    airtable_user = env.airtable.get_person(user["user"]["id"])
+    if not airtable_user:
+        await client.chat_delete(channel=env.slack_support_channel, ts=body["event"]["ts"], token=env.slack_user_token, as_user=True)
+        await client.chat_postEphemeral(
+            channel=env.slack_support_channel,
+            user=body["event"]["user"],
+            text="You are not registered in our system. Please *insert method to get logged in airtable* before creating a request."
+        )
+        return
 
-    count = len(env.airtable.get_person(user["user"]["id"])["fields"]["help_requests"])
+    count = len(airtable_user.get("fields",{}).get("help_requests", []))
 
     new_blocks = body["event"]["blocks"] + [
         {
@@ -67,7 +83,7 @@ def handle_new_message(body, client):
         }
     ]
 
-    msg = client.chat_postMessage(
+    msg = await client.chat_postMessage(
         channel=env.slack_request_channel,
         blocks=new_blocks,
         text=body["event"]["text"],
@@ -82,26 +98,29 @@ def handle_new_message(body, client):
         priv_thread_ts=msg["ts"]
     )
 
-    if not res:
-        # Delete the message
-        client.chat_delete(channel=env.slack_support_channel, ts=body["event"]["ts"], token=env.slack_user_token, as_user=True)
-        client.chat_delete(channel=env.slack_request_channel, ts=msg["ts"], token=env.slack_user_token, as_user=True)
-        client.chat_postEphemeral(
-            channel=env.slack_support_channel,
-            user=body["event"]["user"],
-            text="You are not registered in our system. Please *insert method to get logged in airtable* before creating a request."
-        )
 
-
-def handle_edited_message(body, client, say):
-    user = client.users_info(user=body["event"]["message"]["user"])
+async def handle_edited_message(body: Dict[str, Any], client: AsyncWebClient):
+    user = await client.users_info(user=body["event"]["message"]["user"])
 
     old_ts = env.airtable.get_request(body["event"]["message"]["ts"])["fields"]["internal_thread"]
     
-    client.chat_update(
+    # fetch message
+    msg = await client.conversations_history(
+        channel=env.slack_request_channel,
+        latest=old_ts,
+        limit=1,
+        inclusive=True
+    )
+
+    blocks = msg["messages"][0]["blocks"]
+    new_blocks = body["event"]["message"]["blocks"] 
+
+    blocks[0] = new_blocks[0]
+
+    await client.chat_update(
         channel=env.slack_request_channel,
         ts=old_ts,
-        blocks=body["event"]["message"]["blocks"],
+        blocks=blocks,
         text=body["event"]["message"]["text"],
         username=user["user"]["profile"]["real_name"],
         icon_url=user["user"]["profile"]["image_48"]
@@ -115,6 +134,6 @@ def handle_edited_message(body, client, say):
     )
 
 
-def handle_deleted_message(body, client):
+async def handle_deleted_message(body: Dict[str, Any], client: AsyncWebClient):
     env.airtable.delete_req(body["event"]["previous_message"]["ts"])
-    client.chat_delete(channel=env.slack_request_channel, ts=body["event"]["previous_message"]["ts"], token=env.slack_user_token, as_user=True)
+    await client.chat_delete(channel=env.slack_request_channel, ts=body["event"]["previous_message"]["ts"], token=env.slack_user_token, as_user=True)
