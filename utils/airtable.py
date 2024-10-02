@@ -8,6 +8,17 @@ class AirtableManager:
         self.help_table = api.table(base_id, "help")
         print("Connected to Airtable")
 
+    def create_person(self, first_name: str, last_name: str, email: str, slack_id: str):
+        self.people_table.create(
+            {
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "slack_id": slack_id,
+                "preexisting_user": False,
+            }
+        )
+
     def get_person(self, user_id: str):
         user = self.people_table.first(formula=f'{{slack_id}} = "{user_id}"')
         return user

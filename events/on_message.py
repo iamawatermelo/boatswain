@@ -29,20 +29,14 @@ async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient):
 
     airtable_user = env.airtable.get_person(user["user"]["id"])
     if not airtable_user:
-        await client.chat_delete(
-            channel=env.slack_support_channel,
-            ts=body["event"]["ts"],
-            token=env.slack_user_token,
-            as_user=True,
-        )
-        await client.chat_postEphemeral(
-            channel=env.slack_support_channel,
-            user=body["event"]["user"],
-            text="You are not registered in our system. Please *insert method to get logged in airtable* before creating a request.",
-        )
-        return
-
-    count = len(airtable_user.get("fields", {}).get("help_requests", []))
+        forename = user["user"]["profile"]["first_name"]
+        surname = user["user"]["profile"]["last_name"]
+        slack_id = user["user"]["id"]
+        email = user["user"]["profile"].get("email")
+        env.airtable.create_person(forename, surname, email, slack_id)
+        count = 0
+    else:
+        count = len(airtable_user.get("fields", {}).get("help_requests", []))
 
     await client.reactions_add(
         channel=env.slack_support_channel,
