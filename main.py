@@ -6,10 +6,8 @@ from utils.env import env
 from events.on_message import handle_message
 from events.mark_resolved import handle_mark_resolved
 
-app = AsyncApp(
-    token=env.slack_bot_token,
-    signing_secret=env.slack_signing_secret
-)
+app = AsyncApp(token=env.slack_bot_token, signing_secret=env.slack_signing_secret)
+
 
 @app.event("message")
 async def handle_message_events(body: Dict[str, Any], client: AsyncWebClient, say):
@@ -17,7 +15,9 @@ async def handle_message_events(body: Dict[str, Any], client: AsyncWebClient, sa
 
 
 @app.action("mark-resolved")
-async def handle_mark_resolved_button(ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient):
+async def handle_mark_resolved_button(
+    ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient
+):
     await ack()
 
     await handle_mark_resolved(body, client)

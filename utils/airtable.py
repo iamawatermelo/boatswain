@@ -11,21 +11,21 @@ class AirtableManager:
     def get_person(self, user_id: str):
         user = self.people_table.first(formula=f'{{slack_id}} = "{user_id}"')
         return user
-    
-    def get_request(self, pub_thread_ts: str | None=None, priv_thread_ts: str | None=None):
+
+    def get_request(
+        self, pub_thread_ts: str | None = None, priv_thread_ts: str | None = None
+    ):
         if pub_thread_ts:
             req = self.help_table.first(formula=f'{{identifier}} = "{pub_thread_ts}"')
         elif priv_thread_ts:
-            req = self.help_table.first(formula=f'{{internal_thread}} = "{priv_thread_ts}"')
-        
+            req = self.help_table.first(
+                formula=f'{{internal_thread}} = "{priv_thread_ts}"'
+            )
+
         return req
 
     def create_request(
-        self,
-        pub_thread_ts: str,
-        content: str,
-        user_id: str,
-        priv_thread_ts: str
+        self, pub_thread_ts: str, content: str, user_id: str, priv_thread_ts: str
     ):
         print(f"Creating help request for user: {user_id}")
         linked_record = self.get_person(user_id)
@@ -37,8 +37,8 @@ class AirtableManager:
             {
                 "identifier": pub_thread_ts,
                 "content": content,
-                "person": [linked_record['id']],
-                "internal_thread": priv_thread_ts
+                "person": [linked_record["id"]],
+                "internal_thread": priv_thread_ts,
             }
         )
         return True
@@ -58,7 +58,6 @@ class AirtableManager:
         if not req:
             return
         return self.help_table.update(req["id"], {"resolver": [id]})
-
 
     def delete_req(self, pub_thread_ts: str):
         req = self.get_request(pub_thread_ts)
