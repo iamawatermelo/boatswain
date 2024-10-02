@@ -44,6 +44,19 @@ async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient):
 
     count = len(airtable_user.get("fields", {}).get("help_requests", []))
 
+    await client.reactions_add(
+        channel=env.slack_support_channel,
+        name="thinking_face",
+        timestamp=body["event"]["ts"],
+    )
+
+    if count == 0:
+        await client.chat_postMessage(
+            channel=env.slack_support_channel,
+            thread_ts=body["event"]["ts"],
+            text=f"hey there {user['user']['real_name']}! it looks like this is your first time in the support channel. We've recieved your question and will get back to you as soon as possible. In the meantime, feel free to check out our <https://hack.club/low-skies-faq|FAQ> for answers to common questions. If you have any more questions, please make a new post in <#{env.slack_support_channel}> so we can ",
+        )
+
     new_blocks = body["event"]["blocks"] + [
         {
             "type": "context",
@@ -88,7 +101,7 @@ async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient):
         icon_url=user["user"]["profile"]["image_48"],
     )
 
-    res = env.airtable.create_request(
+    env.airtable.create_request(
         pub_thread_ts=body["event"]["ts"],
         content=body["event"]["text"],
         user_id=body["event"]["user"],

@@ -5,6 +5,7 @@ from typing import Callable, Dict, Any
 from utils.env import env
 from events.on_message import handle_message
 from events.mark_resolved import handle_mark_resolved
+from events.direct_to_faq import handle_direct_to_faq
 
 app = AsyncApp(token=env.slack_bot_token, signing_secret=env.slack_signing_secret)
 
@@ -21,6 +22,15 @@ async def handle_mark_resolved_button(
     await ack()
 
     await handle_mark_resolved(body, client)
+
+
+@app.action("direct-to-faq")
+async def handle_direct_to_faq_button(
+    ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient
+):
+    await ack()
+
+    await handle_direct_to_faq(body, client)
 
 
 if __name__ == "__main__":
