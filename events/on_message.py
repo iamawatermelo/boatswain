@@ -18,7 +18,6 @@ async def handle_message(body: Dict[str, Any], client: AsyncWebClient, say):
     elif subtype == "message_deleted":
         await handle_deleted_message(body, client)
     elif subtype:
-        await say(f"I don't support this message subtype yet. `{subtype}`")
         return
     else:
         await handle_new_message(body, client)
