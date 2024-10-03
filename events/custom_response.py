@@ -7,6 +7,23 @@ from utils.views import views
 async def handle_custom_response_btn(body: Dict[str, Any], client: AsyncWebClient):
     req = env.airtable.get_request(priv_thread_ts=body["message"]["ts"])
 
+    msg = await client.conversations_history(
+        channel=env.slack_request_channel, latest=body["message"]["ts"], limit=1, inclusive=True
+    )
+    blocks = msg["messages"][0]["blocks"]
+    for block in blocks:
+        if block["type"] == "context":
+            text = block["elements"][0]["text"] + f" <@{body['user']['id']}> is responding."
+            block["elements"][0]["text"] = text
+            blocks[blocks.index(block)] = block
+
+    await client.chat_update(
+        channel=env.slack_request_channel,
+        ts=body["message"]["ts"],
+        blocks=blocks,
+        text=msg["messages"][0]["text"],
+    )
+
     await client.views_open(
         trigger_id=body["trigger_id"],
         view=views.custom_response(
@@ -24,6 +41,25 @@ async def handle_custom_response(body: Dict[str, Any], client: AsyncWebClient):
         **{
             "status": "responded",
         }
+    )
+
+    msg = await client.conversations_history(
+        channel=env.slack_request_channel, latest=req["fields"]["internal_thread"], limit=1, inclusive=True
+    )
+
+    blocks = msg["messages"][0]["blocks"]
+
+    for block in blocks:
+        if block["type"] == "context":
+            text = block["elements"][0]["text"].replace(f" <@{body['user']['id']}> is responding.", f'<@{body["user"]["id"]}> has responded.')
+            block["elements"][0]["text"] = text
+            blocks[blocks.index(block)] = block
+
+    await client.chat_update(
+        channel=env.slack_request_channel,
+        ts=req["fields"]["internal_thread"],
+        blocks=blocks,
+        text=msg["messages"][0]["text"],
     )
 
     user = await client.users_info(user=body["user"]["id"])
