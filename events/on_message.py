@@ -20,7 +20,6 @@ async def handle_message(body: Dict[str, Any], client: AsyncWebClient, say):
     elif subtype == "file_share":
         await handle_new_message(body, client, file=True)
     elif subtype:
-        await say(f"I can't handle this message subtype yet. {subtype}\n```{body}```")
         return
     else:
         await handle_new_message(body, client)
