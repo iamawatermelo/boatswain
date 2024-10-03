@@ -15,7 +15,7 @@ class AirtableManager:
                 "last_name": last_name,
                 "email": email,
                 "slack_id": slack_id,
-                "preexisting_user": False,
+                "preexisting_user": True,
             }
         )
 
