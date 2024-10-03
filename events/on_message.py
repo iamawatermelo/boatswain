@@ -78,6 +78,12 @@ async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient):
                 },
                 {
                     "type": "button",
+                    "text": {"type": "plain_text", "text": "Mark Bug"},
+                    "value": "mark-bug",
+                    "action_id": "mark-bug",
+                },
+                {
+                    "type": "button",
                     "text": {"type": "plain_text", "text": "Mark Resolved"},
                     "style": "primary",
                     "value": "mark-resolved",

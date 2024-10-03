@@ -6,6 +6,7 @@ from utils.env import env
 from events.on_message import handle_message
 from events.mark_resolved import handle_mark_resolved
 from events.direct_to_faq import handle_direct_to_faq
+from events.mark_bug import handle_mark_bug
 from events.custom_response import handle_custom_response_btn, handle_custom_response
 
 app = AsyncApp(token=env.slack_bot_token, signing_secret=env.slack_signing_secret)
@@ -32,6 +33,13 @@ async def handle_direct_to_faq_button(
     await ack()
 
     await handle_direct_to_faq(body, client)
+
+
+@app.action("mark-bug")
+async def handle_mark_bug_button(ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient):
+    await ack()
+
+    await handle_mark_bug(body, client)
 
 
 @app.action("custom-response")
