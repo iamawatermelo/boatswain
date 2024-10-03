@@ -19,6 +19,13 @@ async def handle_custom_response(body: Dict[str, Any], client: AsyncWebClient):
     view = body["view"]
 
     req = env.airtable.get_request(pub_thread_ts=view["blocks"][0]["block_id"])
+    env.airtable.update_request(
+        pub_thread_ts=req["fields"]["identifier"],
+        **{
+            "status": "responded",
+        }
+    )
+
     user = await client.users_info(user=body["user"]["id"])
 
     for block in view["blocks"]:

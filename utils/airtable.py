@@ -68,7 +68,9 @@ class AirtableManager:
         req = self.get_request(priv_thread_ts=priv_thread_ts)
         if not req:
             return
-        return self.help_table.update(req["id"], {"resolver": [id]})
+        return self.help_table.update(
+            req["id"], {"resolver": [id], "status": "resolved"}
+        )
 
     def delete_req(self, pub_thread_ts: str):
         req = self.get_request(pub_thread_ts)
