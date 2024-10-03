@@ -15,7 +15,7 @@ class Environment:
         self.airtable_api_key = os.environ.get("AIRTABLE_API_KEY")
         self.airtable_base_id = os.environ.get("AIRTABLE_BASE_ID")
 
-        self.port = os.environ.get("PORT", 3000)
+        self.port = int(os.environ.get("PORT", 3000))
 
         if not self.slack_bot_token:
             raise Exception("SLACK_BOT_TOKEN is not set")
