@@ -23,7 +23,7 @@ async def handle_custom_response_btn(body: Dict[str, Any], client: AsyncWebClien
             block["elements"][0]["text"] = text
             blocks[blocks.index(block)] = block
 
-    msg_text = msg.get("messages",[{}])[0].get("text")
+    msg_text = msg.get("messages", [{}])[0].get("text")
 
     await client.chat_update(
         channel=env.slack_request_channel,

@@ -18,16 +18,14 @@ async def handle_message(body: Dict[str, Any], client: AsyncWebClient, say):
     elif subtype == "message_deleted":
         await handle_deleted_message(body, client)
     elif subtype == "file_share":
-        await handle_new_message(body, client, file=True)
+        await handle_new_message(body, client)
     elif subtype:
         return
     else:
         await handle_new_message(body, client)
 
 
-async def handle_new_message(
-    body: Dict[str, Any], client: AsyncWebClient, file: bool = False
-):
+async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient):
     user = await client.users_info(user=body["event"]["user"])
 
     airtable_user = env.airtable.get_person(user["user"]["id"])
@@ -53,11 +51,6 @@ async def handle_new_message(
             thread_ts=body["event"]["ts"],
             text=f"hey there {user['user']['real_name']}! it looks like this is your first time in the support channel. We've recieved your question and will get back to you as soon as possible. In the meantime, feel free to check out our <https://hack.club/low-skies-faq|FAQ> for answers to common questions. If you have any more questions, please make a new post in <#{env.slack_support_channel}> so we can help you quicker!",
         )
-
-    # if file:
-    #     files = body["event"]["files"]
-    #     text = "\n".join([f"<{file['permalink']}|{file['name']}>" for file in files])
-    text = ""
 
     thread_url = f"https://hackclub.slack.com/archives/{env.slack_support_channel}/p{body['event']['ts'].replace('.', '')}"
     new_blocks = [
@@ -105,7 +98,7 @@ async def handle_new_message(
     msg = await client.chat_postMessage(
         channel=env.slack_request_channel,
         blocks=new_blocks,
-        text=text,
+        text="",
         username=user["user"]["profile"]["real_name"],
         icon_url=user["user"]["profile"]["image_48"],
     )
@@ -154,9 +147,16 @@ async def handle_edited_message(body: Dict[str, Any], client: AsyncWebClient):
 
 async def handle_deleted_message(body: Dict[str, Any], client: AsyncWebClient):
     env.airtable.delete_req(body["event"]["previous_message"]["ts"])
-    await client.chat_delete(
+    msg = await client.conversations_history(
         channel=env.slack_request_channel,
-        ts=body["event"]["previous_message"]["ts"],
-        token=env.slack_user_token,
-        as_user=True,
+        latest=body["event"]["previous_message"]["ts"],
+        limit=1,
+        inclusive=True,
     )
+    if msg:
+        await client.chat_delete(
+            channel=env.slack_request_channel,
+            ts=body["event"]["previous_message"]["ts"],
+            token=env.slack_user_token,
+            as_user=True,
+        )
