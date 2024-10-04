@@ -36,7 +36,9 @@ async def handle_direct_to_faq_button(
 
 
 @app.action("mark-bug")
-async def handle_mark_bug_button(ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient):
+async def handle_mark_bug_button(
+    ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient
+):
     await ack()
 
     await handle_mark_bug(body, client)

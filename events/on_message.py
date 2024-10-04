@@ -25,7 +25,9 @@ async def handle_message(body: Dict[str, Any], client: AsyncWebClient, say):
         await handle_new_message(body, client)
 
 
-async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient, file: bool = False):
+async def handle_new_message(
+    body: Dict[str, Any], client: AsyncWebClient, file: bool = False
+):
     user = await client.users_info(user=body["event"]["user"])
 
     airtable_user = env.airtable.get_person(user["user"]["id"])
@@ -52,13 +54,13 @@ async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient, file:
             text=f"hey there {user['user']['real_name']}! it looks like this is your first time in the support channel. We've recieved your question and will get back to you as soon as possible. In the meantime, feel free to check out our <https://hack.club/low-skies-faq|FAQ> for answers to common questions. If you have any more questions, please make a new post in <#{env.slack_support_channel}> so we can help you quicker!",
         )
 
-    if file:
-        files = body["event"]["files"]
-        links = "\n".join([f"<{file['permalink']}|{file['name']}>" for file in files])
-        body["event"]["text"] += f"\n\n{links}"
+    # if file:
+    #     files = body["event"]["files"]
+    #     text = "\n".join([f"<{file['permalink']}|{file['name']}>" for file in files])
+    text = ""
 
     thread_url = f"https://hackclub.slack.com/archives/{env.slack_support_channel}/p{body['event']['ts'].replace('.', '')}"
-    new_blocks = (body["event"].get("blocks") or [{'type': 'rich_text', 'block_id': 'blockies', 'elements': [{'type': 'rich_text_section', 'elements': [{'type': 'text', 'text': 'There was no text submitted with the files'}]}]}]) + [
+    new_blocks = [
         {
             "type": "context",
             "elements": [
@@ -103,7 +105,7 @@ async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient, file:
     msg = await client.chat_postMessage(
         channel=env.slack_request_channel,
         blocks=new_blocks,
-        text=body["event"]["text"],
+        text=text,
         username=user["user"]["profile"]["real_name"],
         icon_url=user["user"]["profile"]["image_48"],
     )

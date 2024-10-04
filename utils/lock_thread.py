@@ -2,6 +2,7 @@ import aiohttp
 from utils.env import env
 from requests import post
 
+
 async def lock_thread(thread_ts: str, channel_name: str):
     print("locking thread")
 

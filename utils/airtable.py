@@ -54,8 +54,15 @@ class AirtableManager:
         )
         return True
 
-    def update_request(self, pub_thread_ts: str | None  = None, priv_thread_ts: str | None = None, **updates: dict):
-        req = self.get_request(pub_thread_ts=pub_thread_ts, priv_thread_ts=priv_thread_ts)
+    def update_request(
+        self,
+        pub_thread_ts: str | None = None,
+        priv_thread_ts: str | None = None,
+        **updates: dict,
+    ):
+        req = self.get_request(
+            pub_thread_ts=pub_thread_ts, priv_thread_ts=priv_thread_ts
+        )
         if not req:
             return
         self.help_table.update(req["id"], updates)
