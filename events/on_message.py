@@ -58,6 +58,14 @@ async def handle_new_support_response(body: Dict[str, Any], client: AsyncWebClie
     if not req:
         return
 
+    if req["fields"]["status"] == "resolved":
+        await client.chat_postMessage(
+            channel=env.slack_support_channel,
+            thread_ts=req["fields"]["identifier"],
+            text="this thread has been resolved - please make a new post in <#C01U6P7LZ9A> if you have any more questions!",
+        )
+        return
+
     req_msg = await client.conversations_history(
         channel=env.slack_request_channel,
         latest=req["fields"]["internal_thread"],
