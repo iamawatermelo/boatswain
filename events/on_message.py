@@ -6,23 +6,87 @@ from utils.env import env
 
 
 async def handle_message(body: Dict[str, Any], client: AsyncWebClient, say):
-    if body["event"]["channel"] != env.slack_support_channel:
-        return
-
-    if body["event"].get("thread_ts"):
+    if body["event"]["channel"] not in [
+        env.slack_support_channel,
+        env.slack_request_channel,
+    ]:
         return
 
     subtype = body["event"].get("subtype")
-    if subtype == "message_changed":
-        await handle_edited_message(body, client)
-    elif subtype == "message_deleted":
-        await handle_deleted_message(body, client)
-    elif subtype == "file_share":
-        await handle_new_message(body, client)
-    elif subtype:
+    if body["event"].get("subtype", None) not in [
+        None,
+        "message_changed",
+        "message_deleted",
+        "file_share",
+    ]:
         return
-    else:
-        await handle_new_message(body, client)
+
+    match body["event"]["channel"]:
+        case env.slack_support_channel:
+            match subtype:
+                case None | "file_share":
+                    if body["event"].get("thread_ts"):
+                        await handle_new_support_response(body, client)
+                    else:
+                        await handle_new_message(body, client)
+                case "message_changed":
+                    if body["event"].get("previous_message").get("thread_ts"):
+                        await handle_edited_message(
+                            body,
+                            client,
+                            ts=body["event"]["previous_message"]["thread_ts"],
+                        )
+                case "message_deleted":
+                    await handle_deleted_message(body, client)
+
+        case env.slack_request_channel:
+            match subtype:
+                case None | "file_share":
+                    if body["event"].get("thread_ts"):
+                        await handle_new_request_message(body, client)
+                case "message_changed":
+                    if body["event"].get("previous_message").get("thread_ts"):
+                        await handle_edited_message(
+                            body,
+                            client,
+                            ts=body["event"]["previous_message"]["thread_ts"],
+                        )
+
+
+async def handle_new_support_response(body: Dict[str, Any], client: AsyncWebClient):
+    req = env.airtable.get_request(body["event"]["thread_ts"])
+    if not req:
+        return
+
+    req_msg = await client.conversations_history(
+        channel=env.slack_request_channel,
+        latest=req["fields"]["internal_thread"],
+        limit=1,
+        inclusive=True,
+    )
+
+    if not req_msg:
+        return
+
+    user = await client.users_info(user=body["event"]["user"])
+    text = body["event"].get("text", "")
+
+    if body["event"].get("files"):
+        files = body["event"]["files"]
+        for file in files:
+            filename = file["name"]
+            if files.index(file) > 0:
+                text += f", <{file['permalink']}|{filename}>"
+            else:
+                text += f"\n<{file['permalink']}|{filename}>"
+
+    await client.chat_postMessage(
+        channel=env.slack_request_channel,
+        thread_ts=req["fields"]["internal_thread"],
+        text=text,
+        username=user["user"]["profile"]["display_name"],
+        icon_url=user["user"]["profile"]["image_48"],
+    )
 
 
 async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient):
@@ -74,12 +138,6 @@ async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient):
                 },
                 {
                     "type": "button",
-                    "text": {"type": "plain_text", "text": "Custom response"},
-                    "value": "custom-response",
-                    "action_id": "custom-response",
-                },
-                {
-                    "type": "button",
                     "text": {"type": "plain_text", "text": "Mark Bug"},
                     "value": "mark-bug",
                     "action_id": "mark-bug",
@@ -99,7 +157,7 @@ async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient):
         channel=env.slack_request_channel,
         blocks=new_blocks,
         text="",
-        username=user["user"]["profile"]["real_name"],
+        username=user["user"]["profile"]["display_name"],
         icon_url=user["user"]["profile"]["image_48"],
     )
 
@@ -111,37 +169,48 @@ async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient):
     )
 
 
-async def handle_edited_message(body: Dict[str, Any], client: AsyncWebClient):
-    user = await client.users_info(user=body["event"]["message"]["user"])
+async def handle_edited_message(body: Dict[str, Any], client: AsyncWebClient, ts: str):
+    return  # Will be implemented later
+    if body["event"]["channel"] == env.slack_support_channel:
+        req = env.airtable.get_request(pub_thread_ts=ts)
+    else:
+        req = env.airtable.get_request(priv_thread_ts=ts)
 
-    old_ts = env.airtable.get_request(body["event"]["message"]["ts"])["fields"][
-        "internal_thread"
-    ]
+    if not req:
+        print("no req")
+        return
 
-    # fetch message
-    msg = await client.conversations_history(
-        channel=env.slack_request_channel, latest=old_ts, limit=1, inclusive=True
-    )
+    text: str = body["event"]["message"]["text"]
+    if ":shushing_face:" in text:
+        return
 
-    blocks = msg["messages"][0]["blocks"]
-    new_blocks = body["event"]["message"]["blocks"]
+    user_id = body.get("event", {}).get("message", {}).get("user")
+    print(user_id)
+    user = await client.users_info(user="U054VC2KM9P")
 
-    blocks[0] = new_blocks[0]
+    if body["event"]["message"].get("files"):
+        files = body["event"]["message"]["files"]
+        for file in files:
+            filename = file["name"]
+            if files.index(file) > 0:
+                text += f", <{file['permalink']}|{filename}>"
+            else:
+                text += f"\n<{file['permalink']}|{filename}>"
 
     await client.chat_update(
-        channel=env.slack_request_channel,
-        ts=old_ts,
-        blocks=blocks,
-        text=body["event"]["message"]["text"],
-        username=user["user"]["profile"]["real_name"],
+        channel=(
+            env.slack_request_channel
+            if body["event"]["channel"] == env.slack_support_channel
+            else env.slack_support_channel
+        ),
+        ts=(
+            req["fields"]["internal_thread"]
+            if body["event"]["channel"] == env.slack_support_channel
+            else req["fields"]["identifier"]
+        ),
+        text=text,
+        username=user["user"]["profile"]["display_name"],
         icon_url=user["user"]["profile"]["image_48"],
-    )
-
-    env.airtable.update_request(
-        pub_thread_ts=body["event"]["message"]["ts"],
-        **{
-            "content": body["event"]["message"]["text"],
-        },
     )
 
 
@@ -160,3 +229,33 @@ async def handle_deleted_message(body: Dict[str, Any], client: AsyncWebClient):
             token=env.slack_user_token,
             as_user=True,
         )
+
+
+async def handle_new_request_message(body: Dict[str, Any], client: AsyncWebClient):
+    req = env.airtable.get_request(priv_thread_ts=body["event"]["thread_ts"])
+    if not req:
+        return
+
+    text: str = body["event"]["text"]
+    if ":shushing_face:" in text:
+        return
+
+    user = await client.users_info(user=body["event"]["user"])
+    text = body["event"].get("text", "")
+
+    if body["event"].get("files"):
+        files = body["event"]["files"]
+        for file in files:
+            filename = file["name"]
+            if files.index(file) > 0:
+                text += f", <{file['permalink']}|{filename}>"
+            else:
+                text += f"\n<{file['permalink']}|{filename}>"
+
+    await client.chat_postMessage(
+        channel=env.slack_support_channel,
+        thread_ts=req["fields"]["identifier"],
+        text=text,
+        username=user["user"]["profile"]["display_name"],
+        icon_url=user["user"]["profile"]["image_48"],
+    )

@@ -42,6 +42,18 @@ async def handle_mark_resolved(
 
     # await lock_thread(thread_ts=res["fields"]["identifier"], channel_name=channel_name)
 
+    # delete thread in req channel
+    messages = await client.conversations_replies(
+        channel=env.slack_request_channel, ts=body["message"]["ts"]
+    )
+    for message in messages["messages"]:
+        await client.chat_delete(
+            channel=env.slack_request_channel,
+            ts=message["ts"],
+            as_user=True,
+            token=env.slack_user_token,
+        )
+
     await client.chat_delete(
         channel=env.slack_request_channel, ts=body["message"]["ts"]
     )
