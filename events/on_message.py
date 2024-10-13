@@ -59,6 +59,11 @@ async def handle_new_support_response(body: Dict[str, Any], client: AsyncWebClie
         return
 
     if req["fields"]["status"] == "resolved":
+        # make sure the sender is not in the requests channel
+        sender_id = body["event"]["user"]
+        support_team = await client.conversations_members(channel=env.slack_request_channel)
+        if sender_id in support_team["members"]:
+            return
         await client.chat_postMessage(
             channel=env.slack_support_channel,
             thread_ts=req["fields"]["identifier"],
