@@ -15,13 +15,19 @@ async def handle_mark_bug(body: Dict[str, Any], client: AsyncWebClient):
         },
     )
 
-    pub_thread_ts = req["fields"]["identifier"].replace(".", "")
-    thread_url = f"https://hackclub.slack.com/archives/{env.slack_support_channel}/p{pub_thread_ts}"
+    if req:
+        pub_thread_ts = req["fields"]["identifier"].replace(".", "")
+        thread_url = f"https://hackclub.slack.com/archives/{env.slack_support_channel}/p{pub_thread_ts}"
 
-    await client.chat_postMessage(
-        channel=env.slack_ticket_creator,
-        text=f"Make a <https://github.com/hackclub/high-seas/issues/new|new issue> for <{thread_url}|this> bug report.",
-    )
+        await client.chat_postMessage(
+            channel=env.slack_ticket_creator,
+            text=f"Make a <https://github.com/hackclub/high-seas/issues/new|new issue> for <{thread_url}|this> bug report.",
+        )
+    else:
+        await client.chat_postMessage(
+            channel=env.slack_ticket_creator,
+            text=f"Something went wrong with fetching `{ts}` from Airtable.",
+        )
 
     await handle_mark_resolved(
         body=body,

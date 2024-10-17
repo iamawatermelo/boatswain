@@ -65,7 +65,8 @@ class AirtableManager:
         )
         if not req:
             return
-        self.help_table.update(req["id"], updates)
+        req = self.help_table.update(req["id"], updates)
+        return req
 
     def resolve_request(self, priv_thread_ts: str, resolver: str):
         resolver_item = self.get_person(resolver)
