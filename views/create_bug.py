@@ -61,7 +61,7 @@ def get_modal(thread_id):
 					{
 						"text": {
 							"type": "plain_text",
-							"text": "*Bug*",
+							"text": "Bug",
 							"emoji": True
 						},
 						"value": "bug"
@@ -69,7 +69,7 @@ def get_modal(thread_id):
 					{
 						"text": {
 							"type": "plain_text",
-							"text": "*Enhancement*",
+							"text": "Enhancement",
 							"emoji": True
 						},
 						"value": "enhancement"
