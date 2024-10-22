@@ -13,6 +13,8 @@ class Environment:
         self.slack_support_channel = os.environ.get("SLACK_SUPPORT_CHANNEL")
         self.slack_request_channel = os.environ.get("SLACK_REQUEST_CHANNEL")
         self.slack_ticket_creator = os.environ.get("SLACK_GH_TICKET_CREATOR")
+        self.github_repo = os.environ.get("GITHUB_REPO")
+        self.github_token = os.environ.get("GITHUB_TOKEN")
         self.threadlocker_api_url = os.environ.get("THREADLOCKER_API_URL")
         self.threadlocker_api_key = os.environ.get("THREADLOCKER_API_KEY")
         self.airtable_api_key = os.environ.get("AIRTABLE_API_KEY")
@@ -32,6 +34,10 @@ class Environment:
             raise Exception("SLACK_REQUEST_CHANNEL is not set")
         if not self.slack_ticket_creator:
             raise Exception("SLACK_GH_TICKET_CREATOR is not set")
+        if not self.github_repo:
+            raise Exception("GITHUB_REPO is not set")
+        if not self.github_token:
+            raise Exception("GITHUB_TOKEN is not set")
         if not self.threadlocker_api_url:
             raise Exception("THREADLOCKER_API_URL is not set")
         if not self.threadlocker_api_key:

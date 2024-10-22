@@ -6,7 +6,8 @@ from utils.lock_thread import lock_thread
 
 
 async def handle_mark_resolved(
-    body: Dict[str, Any],
+    ts,
+    resolver_id,
     client: AsyncWebClient,
     message: bool = True,
     custom_response: str | None = None,
@@ -16,7 +17,7 @@ async def handle_mark_resolved(
     #     return
     # channel_name = channel_name["channel"]["name"]
 
-    res = env.airtable.resolve_request(body["message"]["ts"], body["user"]["id"])
+    res = env.airtable.resolve_request(ts, resolver_id)
     if not res:
         return
 
@@ -37,14 +38,14 @@ async def handle_mark_resolved(
             channel=env.slack_support_channel,
             thread_ts=res["fields"]["identifier"],
             text=custom_response
-            or f"this post has been resolved by <@{body['user']['id']}>!\nif you have any more questions, please make a new post in <#{env.slack_support_channel}> and we'll be happy to help you out!",
+            or f"this post has been resolved by <@{resolver_id}>!\nif you have any more questions, please make a new post in <#{env.slack_support_channel}> and we'll be happy to help you out!",
         )
 
     # await lock_thread(thread_ts=res["fields"]["identifier"], channel_name=channel_name)
 
     # delete thread in req channel
     messages = await client.conversations_replies(
-        channel=env.slack_request_channel, ts=body["message"]["ts"]
+        channel=env.slack_request_channel, ts=ts
     )
     for message in messages["messages"]:
         await client.chat_delete(
@@ -55,5 +56,5 @@ async def handle_mark_resolved(
         )
 
     await client.chat_delete(
-        channel=env.slack_request_channel, ts=body["message"]["ts"]
+        channel=env.slack_request_channel, ts=ts
     )

@@ -8,6 +8,7 @@ from events.mark_resolved import handle_mark_resolved
 from events.direct_to_faq import handle_direct_to_faq
 from events.mark_bug import handle_mark_bug
 from events.custom_response import handle_custom_response_btn, handle_custom_response
+from views.create_bug import get_modal as create_bug_modal
 
 app = AsyncApp(token=env.slack_bot_token, signing_secret=env.slack_signing_secret)
 
@@ -23,7 +24,10 @@ async def handle_mark_resolved_button(
 ):
     await ack()
 
-    await handle_mark_resolved(body, client)
+    ts = body["message"]["ts"]
+    resolver = body["user"]["id"]
+
+    await handle_mark_resolved(ts=ts, resolver_id=resolver, client=client)
 
 
 @app.action("direct-to-faq")
@@ -37,6 +41,14 @@ async def handle_direct_to_faq_button(
 
 @app.action("mark-bug")
 async def handle_mark_bug_button(
+    ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient
+):
+    await ack()
+
+    await client.views_open(view=create_bug_modal(body["message"]["ts"]), trigger_id=body["trigger_id"])
+
+@app.view("create_issue")
+async def handle_create_bug_view(
     ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient
 ):
     await ack()
