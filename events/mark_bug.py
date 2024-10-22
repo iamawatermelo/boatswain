@@ -41,6 +41,8 @@ async def handle_mark_bug(body: Dict[str, Any], client: AsyncWebClient):
         'labels': [issue_label],
     }
 
+    url = f'https://api.github.com/repos/{env.github_repo}/issues'
+
     headers = {
         'Accept': 'application/vnd.github+json',
         'Authorization': f'Bearer {env.github_token}',
@@ -48,7 +50,7 @@ async def handle_mark_bug(body: Dict[str, Any], client: AsyncWebClient):
     }
 
     async with aiohttp.ClientSession() as session:
-        async with session.post(f'https://api.github.com/repos/{env.github_repo}/issues', headers=headers, data=data) as resp:
+        async with session.post(url, headers=headers, json=data) as resp:
             if resp.status != 201:
                 await client.chat_postMessage(
                     channel=env.slack_ticket_creator,

@@ -54,7 +54,3 @@ async def handle_mark_resolved(
             as_user=True,
             token=env.slack_user_token,
         )
-
-    await client.chat_delete(
-        channel=env.slack_request_channel, ts=ts
-    )
