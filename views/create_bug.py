@@ -1,5 +1,28 @@
 from utils.env import env
 
+LABELS = [
+    'arrpheus',
+    'battles',
+    'bug',
+    'documentation',
+    'enhancement',
+    'events',
+    'fraud',
+    'gallery',
+    'hackatime',
+    'harbor',
+    'homepage',
+    'map',
+    'scoring',
+    'shipyard',
+    'shop',
+    'signpost',
+    'support',
+    'tutorial',
+    'verifications',
+    'writing'
+]
+
 def get_modal(thread_id):
     return {
         "type": "modal",
@@ -51,29 +74,22 @@ def get_modal(thread_id):
 			"type": "input",
 			"block_id": "labels",
 			"element": {
-				"type": "static_select",
+				"type": "multi_static_select",
 				"placeholder": {
 					"type": "plain_text",
-					"text": "Select a label",
+					"text": "Select Labels",
 					"emoji": True
 				},
 				"options": [
 					{
 						"text": {
 							"type": "plain_text",
-							"text": "Bug",
+							"text": label.capitalize(),
 							"emoji": True
 						},
-						"value": "bug"
-					},
-					{
-						"text": {
-							"type": "plain_text",
-							"text": "Enhancement",
-							"emoji": True
-						},
-						"value": "enhancement"
+						"value": label
 					}
+					for label in LABELS
 				],
 				"action_id": "labels"
 			},

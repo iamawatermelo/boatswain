@@ -31,14 +31,14 @@ async def handle_mark_bug(body: Dict[str, Any], client: AsyncWebClient):
 
     issue_title = view["state"]["values"]["title"]["title"]["value"]
     issue_body = view["state"]["values"]["body"]["body"]["value"]
-    issue_label = view["state"]["values"]["labels"]["labels"]["selected_option"]["value"]
+    issue_labels = view["state"]["values"]["labels"]["labels"]["selected_options"]
 
     footer = f"\n\n---\n\n_This issue was created automatically by the support team. See the appropriate thread [here](https://hackclub.slack.com/archives/{env.slack_support_channel}/p{pub_thread_ts})_"
 
     data = {
         'title': issue_title,
         'body': issue_body + footer,
-        'labels': [issue_label],
+        'labels': [label['value'] for label in issue_labels],
     }
 
     url = f'https://api.github.com/repos/{env.github_repo}/issues'
@@ -62,5 +62,5 @@ async def handle_mark_bug(body: Dict[str, Any], client: AsyncWebClient):
         ts=ts,
         resolver_id=body["user"]["id"],
         client=client,
-        custom_response=f"Thanks for reporting this {issue_label}! It's been logged and the team will try and get it fixed as soon as possible!\nIf you have any more questions, please make a new post in <#{env.slack_support_channel}> and we'll be happy to help you out!",
+        custom_response=f"Thanks for reporting this! It's been logged and the team will try and get it fixed as soon as possible!\nIf you have any more questions, please make a new post in <#{env.slack_support_channel}> and we'll be happy to help you out!",
     )
