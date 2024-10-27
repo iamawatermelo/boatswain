@@ -3,7 +3,7 @@ from typing import Dict, Any
 
 
 from utils.env import env
-
+from utils.queue import add_message_to_delete_queue
 
 async def handle_message(body: Dict[str, Any], client: AsyncWebClient, say):
     if body["event"]["channel"] not in [
@@ -237,11 +237,8 @@ async def handle_deleted_message(body: Dict[str, Any], client: AsyncWebClient):
         inclusive=True,
     )
     if msg:
-        await client.chat_delete(
-            channel=env.slack_request_channel,
-            ts=body["event"]["previous_message"]["ts"],
-            token=env.slack_user_token,
-            as_user=True,
+        add_message_to_delete_queue(
+            channel_id=env.slack_request_channel, message_ts=msg["messages"][0]["ts"]
         )
 
 

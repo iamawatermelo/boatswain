@@ -1,9 +1,7 @@
 from slack_sdk.web.async_client import AsyncWebClient
-from typing import Dict, Any
 
 from utils.env import env
-from utils.lock_thread import lock_thread
-
+from utils.queue import add_message_to_delete_queue
 
 async def handle_mark_resolved(
     ts,
@@ -48,9 +46,6 @@ async def handle_mark_resolved(
         channel=env.slack_request_channel, ts=ts
     )
     for message in messages["messages"]:
-        await client.chat_delete(
-            channel=env.slack_request_channel,
-            ts=message["ts"],
-            as_user=True,
-            token=env.slack_user_token,
+        add_message_to_delete_queue(
+            channel_id=env.slack_request_channel, message_ts=message["ts"]
         )

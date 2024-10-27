@@ -1,8 +1,10 @@
 from slack_bolt.async_app import AsyncApp
 from slack_sdk.web.async_client import AsyncWebClient
+from threading import Thread
 from typing import Callable, Dict, Any
 
 from utils.env import env
+from utils.queue import process_queue
 from events.on_message import handle_message
 from events.mark_resolved import handle_mark_resolved
 from events.direct_to_faq import handle_direct_to_faq
@@ -75,4 +77,6 @@ async def handle_custom_response_view(
 
 
 if __name__ == "__main__":
+    queue_thread = Thread(target=process_queue, daemon=True).start()
+
     app.start(port=env.port)
