@@ -103,7 +103,7 @@ async def endpoint(req: Request):
     return await app_handler.handle(req)
 
 queue_thread = Thread(target=process_queue, daemon=True).start()
-api = Starlette(debug=True, routes=[Route("/slack/events", endpoint=endpoint, methods=["POST"]), Route("/status", endpoint=ping, methods=['GET'])])
+api = Starlette(debug=True, routes=[Route("/slack/events", endpoint=endpoint, methods=["POST"]), Route("/ping", endpoint=ping, methods=['GET'])])
 
 if __name__ == "__main__":
     import uvicorn
