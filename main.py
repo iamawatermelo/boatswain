@@ -1,5 +1,10 @@
 from slack_bolt.async_app import AsyncApp
 from slack_sdk.web.async_client import AsyncWebClient
+from slack_bolt.adapter.starlette.async_handler import AsyncSlackRequestHandler
+from starlette.applications import Starlette
+from starlette.routing import Route
+from starlette.responses import JSONResponse
+
 from threading import Thread
 from typing import Callable, Dict, Any
 
@@ -13,6 +18,18 @@ from events.custom_response import handle_custom_response_btn, handle_custom_res
 from views.create_bug import get_modal as create_bug_modal
 
 app = AsyncApp(token=env.slack_bot_token, signing_secret=env.slack_signing_secret)
+
+
+async def ping(request):
+    airtable_up = env.airtable.ping()
+    if not airtable_up:
+        return JSONResponse(
+            {"status": "ERROR", "message": "Cannot reach Airtable"}
+        )
+    return JSONResponse({
+        "status": "OK",
+        "message": "App is running"
+    })
 
 
 @app.event("message")
@@ -76,7 +93,18 @@ async def handle_custom_response_view(
     await handle_custom_response(body, client)
 
 
-if __name__ == "__main__":
-    queue_thread = Thread(target=process_queue, daemon=True).start()
+app_handler = AsyncSlackRequestHandler(app)
 
-    app.start(port=env.port)
+from starlette.applications import Starlette
+from starlette.requests import Request
+from starlette.routing import Route
+
+async def endpoint(req: Request):
+    return await app_handler.handle(req)
+
+queue_thread = Thread(target=process_queue, daemon=True).start()
+api = Starlette(debug=True, routes=[Route("/slack/events", endpoint=endpoint, methods=["POST"]), Route("/status", endpoint=ping, methods=['GET'])])
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:api", host='0.0.0.0', port=env.port, log_level="info")

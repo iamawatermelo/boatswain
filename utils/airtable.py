@@ -8,6 +8,14 @@ class AirtableManager:
         self.help_table = api.table(base_id, "help")
         print("Connected to Airtable")
 
+    def ping(self):
+        try:
+            self.people_table.first()
+            return True
+        except Exception as e:
+            print(f"Error pinging Airtable: {e}")
+            return False
+
     def create_person(self, first_name: str, last_name: str, email: str, slack_id: str):
         self.people_table.create(
             {
