@@ -3,7 +3,7 @@ class Views:
         return {
             "type": "modal",
             "callback_id": "custom_response_view",
-            "title": {"type": "plain_text", "text": "Supporty", "emoji": True},
+            "title": {"type": "plain_text", "text": "Boatswain", "emoji": True},
             "submit": {"type": "plain_text", "text": "Submit", "emoji": True},
             "close": {"type": "plain_text", "text": "Cancel", "emoji": True},
             "blocks": [
