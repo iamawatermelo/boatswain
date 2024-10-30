@@ -195,7 +195,7 @@ async def handle_edited_message(body: Dict[str, Any], client: AsyncWebClient, ts
         return
 
     text: str = body["event"]["message"]["text"]
-    if ":shushing_face:" in text:
+    if ":shushing_face:" in text or "!" in text:
         return
 
     user_id = body.get("event", {}).get("message", {}).get("user")
@@ -248,7 +248,7 @@ async def handle_new_request_message(body: Dict[str, Any], client: AsyncWebClien
         return
 
     text: str = body["event"]["text"]
-    if ":shushing_face:" in text:
+    if ":shushing_face:" in text or "!" in text:
         return
 
     user = await client.users_info(user=body["event"]["user"])
