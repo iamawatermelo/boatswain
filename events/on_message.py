@@ -229,9 +229,9 @@ async def handle_edited_message(body: Dict[str, Any], client: AsyncWebClient, ts
 
 
 async def handle_deleted_message(body: Dict[str, Any], client: AsyncWebClient):
-    print(body['event'])
-    if "thread_ts" in body["event"]:
+    if body["event"].get("previous_message", {}).get("thread_ts"):
         return
+    
     env.airtable.delete_req(body["event"]["previous_message"]["ts"])
     msg = await client.conversations_history(
         channel=env.slack_request_channel,
