@@ -36,7 +36,7 @@ async def handle_mark_resolved(
             channel=env.slack_support_channel,
             thread_ts=res["fields"]["identifier"],
             text=custom_response
-            or f"this post has been resolved by <@{resolver_id}>!\nif you have any more questions, please make a new post in <#{env.slack_support_channel}> and we'll be happy to help you out!",
+            or f"This post has been marked as resolved by <@{resolver_id}>!\nIf you have any more questions, please make a new post in <#{env.slack_support_channel}> and we'll be happy to help you out!",
         )
 
     # await lock_thread(thread_ts=res["fields"]["identifier"], channel_name=channel_name)
