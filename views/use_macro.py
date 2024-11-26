@@ -90,7 +90,7 @@ def get_modal(ts: str, user_id: str) -> Dict[str, Any]:
                             "text": "Create a new macro",
                             "emoji": True,
                         },
-                        "value": "fuck you slack",
+                        "value": "love you slack",
                         "style": "primary",
                         "action_id": "create-macro",
                     }

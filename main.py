@@ -18,7 +18,7 @@ from events.mark_bug import handle_mark_bug
 from events.custom_response import handle_custom_response_btn, handle_custom_response
 from views.create_bug import get_modal as create_bug_modal
 from views.use_macro import get_modal as create_macro_modal
-from views.create_macro import get_modal as create_create_macro_modal  # fucking hell
+from views.create_macro import get_modal as create_create_macro_modal
 
 app = AsyncApp(token=env.slack_bot_token, signing_secret=env.slack_signing_secret)
 
