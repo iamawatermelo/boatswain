@@ -2,6 +2,7 @@ from slack_sdk.web.async_client import AsyncWebClient
 from typing import Dict, Any
 
 
+from events.macros import handle_execute_macro
 from utils.env import env
 from utils.queue import add_message_to_delete_queue
 
@@ -146,9 +147,9 @@ async def handle_new_message(body: Dict[str, Any], client: AsyncWebClient):
             "elements": [
                 {
                     "type": "button",
-                    "text": {"type": "plain_text", "text": "Direct to FAQ"},
-                    "value": "direct-to-faq",
-                    "action_id": "direct-to-faq",
+                    "text": {"type": "plain_text", "text": "Use Macro"},
+                    "value": "use-macro",
+                    "action_id": "use-macro",
                 },
                 {
                     "type": "button",
@@ -195,7 +196,7 @@ async def handle_edited_message(body: Dict[str, Any], client: AsyncWebClient, ts
         return
 
     text: str = body["event"]["message"]["text"]
-    if ":shushing_face:" in text or text.startswitch("!"):
+    if ":shushing_face:" in text or text.startswith("!"):
         return
 
     user_id = body.get("event", {}).get("message", {}).get("user")
@@ -252,6 +253,17 @@ async def handle_new_request_message(body: Dict[str, Any], client: AsyncWebClien
 
     text: str = body["event"]["text"]
     if ":shushing_face:" in text or text.startswith("!"):
+        return
+    elif text.startswith("?"):
+        try:
+            macro = next(iter(x for x in env.airtable.get_macros(body["event"]["user"]) if x.name.lower() == text.lstrip("?").strip().lower()))
+            await handle_execute_macro(body["event"]["user"], macro, body["event"]["thread_ts"], client)
+        except StopIteration:
+            await client.chat_postMessage(
+                channel=env.slack_request_channel,
+                thread_ts=body["event"]["thread_ts"],
+                text=f"Couldn't find that macro <@{body["event"]["user"]}>",
+            )
         return
 
     user = await client.users_info(user=body["event"]["user"])

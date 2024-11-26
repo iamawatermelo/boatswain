@@ -1,4 +1,14 @@
+import dataclasses
+import json
+from typing import Any, Dict, List
 from pyairtable import Api
+
+
+@dataclasses.dataclass
+class Macro:
+    name: str
+    message: Dict[str, Any]
+    close: bool
 
 
 class AirtableManager:
@@ -6,6 +16,7 @@ class AirtableManager:
         api = Api(api_key)
         self.people_table = api.table(base_id, "people")
         self.help_table = api.table(base_id, "help")
+        self.macro_table = api.table(base_id, "macro")
         print("Connected to Airtable")
 
     def ping(self):
@@ -30,6 +41,54 @@ class AirtableManager:
     def get_person(self, user_id: str):
         user = self.people_table.first(formula=f'{{slack_id}} = "{user_id}"')
         return user
+    
+    def get_macros(self, user_id: str) -> List[Macro]:
+        macros = self.macro_table.first(formula=f'{{slack_id}} = "{user_id}"')
+        
+        if macros is None:
+            return []
+        else:
+            assert macros["fields"]["version"] == 1
+            return [Macro(**x) for x in json.loads(macros["fields"]["data"])]
+        
+    def insert_macro(self, user_id: str, macro: Macro):
+        macro_dict = dataclasses.asdict(macro)
+        macros = self.macro_table.first(formula=f'{{slack_id}} = "{user_id}"')
+        
+        if macros is None:
+            person = self.get_person(user_id)
+            assert person
+            
+            self.macro_table.create(
+                {
+                    "slack_id": user_id,
+                    "version": 1,
+                    "data": json.dumps([macro_dict]),
+                    "person": [person["id"]]
+                }
+            )
+        else:
+            assert macros["fields"]["version"] == 1
+            self.macro_table.update(
+                macros["id"],
+                {
+                    "version": 1,
+                    "data": json.dumps([*json.loads(macros["fields"]["data"]), macro_dict])
+                }
+            )
+    
+    def delete_macro(self, user_id: str, macro_id: int):
+        macros = self.macro_table.first(formula=f'{{slack_id}} = "{user_id}"')
+        assert macros
+        macros_list = json.loads(macros["fields"]["data"])
+        
+        self.macro_table.update(
+            macros["id"],
+            {
+                "version": 1,
+                "data": json.dumps([x for i, x in enumerate(macros_list) if i != macro_id])
+            }
+        )
 
     def get_request(
         self, pub_thread_ts: str | None = None, priv_thread_ts: str | None = None
