@@ -56,11 +56,15 @@ class AirtableManager:
         macros = self.macro_table.first(formula=f'{{slack_id}} = "{user_id}"')
         
         if macros is None:
+            person = self.get_person(user_id)
+            assert person
+            
             self.macro_table.create(
                 {
                     "slack_id": user_id,
                     "version": 1,
-                    "data": json.dumps([macro_dict])
+                    "data": json.dumps([macro_dict]),
+                    "person": [person["id"]]
                 }
             )
         else:
