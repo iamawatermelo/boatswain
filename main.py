@@ -8,6 +8,7 @@ from starlette.responses import JSONResponse
 from threading import Thread
 from typing import Callable, Dict, Any
 
+from events.macros import create_macro, handle_execute_macro
 from utils.env import env
 from utils.queue import process_queue
 from events.on_message import handle_message
@@ -16,6 +17,8 @@ from events.direct_to_faq import handle_direct_to_faq
 from events.mark_bug import handle_mark_bug
 from events.custom_response import handle_custom_response_btn, handle_custom_response
 from views.create_bug import get_modal as create_bug_modal
+from views.use_macro import get_modal as create_macro_modal
+from views.create_macro import get_modal as create_create_macro_modal  # fucking hell
 
 app = AsyncApp(token=env.slack_bot_token, signing_secret=env.slack_signing_secret)
 
@@ -66,6 +69,7 @@ async def handle_mark_bug_button(
 
     await client.views_open(view=create_bug_modal(body["message"]["ts"]), trigger_id=body["trigger_id"])
 
+
 @app.view("create_issue")
 async def handle_create_bug_view(
     ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient
@@ -91,6 +95,66 @@ async def handle_custom_response_view(
     await ack()
 
     await handle_custom_response(body, client)
+
+
+@app.action("use-macro")
+async def handle_use_macro_button(
+    ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient
+):
+    await ack()
+
+    view = create_macro_modal(body["message"]["ts"], body["user"]["id"])
+    await client.views_open(view=view, trigger_id=body["trigger_id"])
+
+
+@app.action("execute-macro")
+async def handle_execute_macro_view(
+    ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient
+):
+    await ack()
+
+    user_id: str = body["user"]["id"]
+    block_value: str = body["actions"][0]["value"]
+    [macro_id, ts] = block_value.split(";", 1)
+    macro = env.airtable.get_macros(user_id)[int(macro_id)]
+
+    await handle_execute_macro(user_id, macro, ts, client)
+
+
+@app.action("create-macro")
+async def handle_create_macro_view(
+    ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient
+):
+    await ack()
+    await client.views_push(view=create_create_macro_modal(), trigger_id=body["trigger_id"])
+
+
+@app.action("delete-macro")
+async def handle_delete_macro_view(
+    ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient
+):
+    await ack()
+    
+    user_id: str = body["user"]["id"]
+    block_value: str = body["actions"][0]["value"]
+    [macro_id, ts] = block_value.split(";", 1)
+    
+    env.airtable.delete_macro(user_id, int(macro_id))
+    view = create_macro_modal(ts, user_id)
+    await client.views_update(view=view, trigger_id=body["trigger_id"], view_id=body["view"]["root_view_id"])
+
+
+@app.view_submission("create_macro")
+async def handle_create_macro_view_submission(
+    ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient
+):
+    await ack(response_action="clear")
+    await create_macro(
+        body["user"]["id"],
+        body["view"]["state"]["values"]["name"]["name"]["value"],
+        body["view"]["state"]["values"]["message"]["message"]["rich_text_value"],
+        body["view"]["state"]["values"]["behaviour"]["behaviour"]["selected_option"]["value"] == "close"
+    )
 
 
 app_handler = AsyncSlackRequestHandler(app)
