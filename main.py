@@ -5,6 +5,7 @@ from starlette.applications import Starlette
 from starlette.routing import Route
 from starlette.responses import JSONResponse
 
+from pprint import pprint
 from threading import Thread
 from typing import Callable, Dict, Any
 
@@ -104,7 +105,19 @@ async def handle_use_macro_button(
     await ack()
 
     view = create_macro_modal(body["message"]["ts"], body["user"]["id"])
+    pprint(view)
     await client.views_open(view=view, trigger_id=body["trigger_id"])
+
+
+@app.action("use-macro-pagination")
+async def handle_use_macro_pagination_button(
+    ack: Callable[[], None], body: Dict[str, Any], client: AsyncWebClient
+):
+    await ack()
+    
+    [page, ts] = body["actions"][0]["value"].split(";", 1)
+    view = create_macro_modal(ts, body["user"]["id"], int(page))
+    await client.views_update(view=view, trigger_id=body["trigger_id"], view_id=body["view"]["root_view_id"])
 
 
 @app.action("execute-macro")
