@@ -5,7 +5,6 @@ from starlette.applications import Starlette
 from starlette.routing import Route
 from starlette.responses import JSONResponse
 
-from pprint import pprint
 from threading import Thread
 from typing import Callable, Dict, Any
 
@@ -105,7 +104,6 @@ async def handle_use_macro_button(
     await ack()
 
     view = create_macro_modal(body["message"]["ts"], body["user"]["id"])
-    pprint(view)
     await client.views_open(view=view, trigger_id=body["trigger_id"])
 
 
