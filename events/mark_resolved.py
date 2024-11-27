@@ -1,4 +1,5 @@
 import asyncio
+from slack_sdk.errors import SlackApiError
 from slack_sdk.web.async_client import AsyncWebClient
 
 from utils.env import env
@@ -32,18 +33,28 @@ async def handle_mark_resolved(
     res = env.airtable.resolve_request(ts, resolver_id)
     if not res:
         return
-
-    await client.reactions_remove(
-        channel=env.slack_support_channel,
-        name="thinking_face",
-        timestamp=res["fields"]["identifier"],
-    )
-
-    await client.reactions_add(
-        channel=env.slack_support_channel,
-        name="white_check_mark",
-        timestamp=res["fields"]["identifier"],
-    )
+    
+    try:
+        await client.reactions_remove(
+            channel=env.slack_support_channel,
+            name="thinking_face",
+            timestamp=res["fields"]["identifier"],
+        )
+    except SlackApiError as e:
+        if e.response["error"] in ("no_reaction", "message_not_found"):
+            pass
+        
+        raise e
+    
+    try:
+        await client.reactions_add(
+            channel=env.slack_support_channel,
+            name="white_check_mark",
+            timestamp=res["fields"]["identifier"],
+        )
+    except SlackApiError as e:
+        if e.response["error"] in ("already_reacted", "message_not_found", "too_many_emoji", "too_many_reactions"):
+            pass
 
     if message:
         await client.chat_postMessage(
